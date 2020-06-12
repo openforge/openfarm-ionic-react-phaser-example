@@ -1,0 +1,7 @@
+{
+  "name": "openfarm-react",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}
