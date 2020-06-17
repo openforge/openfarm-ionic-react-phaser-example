@@ -1,24 +1,23 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
-import React from 'react';
-import ExploreContainer from '../components/ExploreContainer';
+import { IonPage, IonItem, useIonViewDidEnter } from '@ionic/react';
+import React, { useState, useEffect } from 'react';
+import Phaser from 'phaser';
 import './Home.css';
+import { gameInstanceInit } from '../phaser/GameInstance';
 
 const Home: React.FC = () => {
+
+  let [gameInstance, setGameInstace] = useState(null);
+
+  useIonViewDidEnter(() => {
+    setGameInstace(gameInstanceInit());
+  });
+
+  // useEffect(()=>setGameInstace(gameInstanceInit()), [])
+
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Blank</IonTitle>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent>
-        <IonHeader collapse="condense">
-          <IonToolbar>
-            <IonTitle size="large">Blank</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-        <ExploreContainer />
-      </IonContent>
+      <div id="game-main">
+      </div>
     </IonPage>
   );
 };
