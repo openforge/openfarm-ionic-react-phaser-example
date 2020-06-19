@@ -1,6 +1,9 @@
 import * as Phaser from 'phaser';
-import { Capacitor } from '@capacitor/core';
-import { restartGame, bombPowerUps, decreasePowerup, currentActiveTileTypes, score, level, levelChangeScore, incrementScore, incrementLevel, incrementCurrenActiveTileTypes } from './GameInstance';
+import { Capacitor, Plugins } from '@capacitor/core';
+import { bombPowerUps, decreasePowerup, currentActiveTileTypes, score, level, levelChangeScore, incrementScore, incrementLevel, incrementCurrenActiveTileTypes, restartStats } from './GameInstance';
+import { giveHapticFeedback, vibrate } from '../Vibration';
+
+const { Motion } = Plugins;
 
 export class MainScene extends Phaser.Scene {
   static KEY = 'main-scene';
@@ -90,11 +93,9 @@ export class MainScene extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor('#49a139');
 
-    console.log(this.game.config.width);
-    console.log(+this.game.config.width)
-    this.tileWidth = +this.game.config.width / 6;
-    this.tileHeight = +this.game.config.width / 6;
-    this.yOffset = +this.game.config.height / 4;
+    this.tileWidth = this.game.scale.gameSize.width / 6;
+    this.tileHeight = this.game.scale.gameSize.width / 6;
+    this.yOffset = this.game.scale.gameSize.height / 4;
     this.assetScale = (this.tileWidth - 10) / this.assetTileSize;
 
     this.matchParticles = this.add.particles('match-particle');
@@ -109,13 +110,13 @@ export class MainScene extends Phaser.Scene {
       on: false
     });
 
-    this.add.rectangle(0, 0, +this.game.config.width, this.yOffset - this.tileHeight, 0x9ef1ff).setOrigin(0);
-    const title = this.add.image(+this.game.config.width / 2, 0, 'title').setOrigin(0.5, 0)
-    .setScale(+this.game.config.width / 515)
+    this.add.rectangle(0, 0, this.game.scale.gameSize.width, this.yOffset - this.tileHeight, 0x9ef1ff).setOrigin(0);
+    const title = this.add.image(this.game.scale.gameSize.width / 2, 0, 'title').setOrigin(0.5, 0)
+    .setScale(this.game.scale.gameSize.width / 515)
     .setDepth(1);
 
     this.scoreText = this.add
-    .text(111 * (+this.game.config.width / 515), 168 * (+this.game.config.width / 515), 'Score: 0',
+    .text(111 * (this.game.scale.gameSize.width / 515), 168 * (this.game.scale.gameSize.width / 515), 'Score: 0',
       {
         align: 'center',
         fontSize: '26px',
@@ -123,11 +124,11 @@ export class MainScene extends Phaser.Scene {
         strokeThickness: 1
       })
     .setOrigin(0.5)
-    .setScale(+this.game.config.width / 515)
+    .setScale(this.game.scale.gameSize.width / 515)
     .setDepth(2);
 
     this.levelText = this.add
-    .text(407 * (+this.game.config.width / 515), 168 * (+this.game.config.width / 515), 'Level: 1',
+    .text(407 * (this.game.scale.gameSize.width / 515), 168 * (this.game.scale.gameSize.width / 515), 'Level: 1',
       {
         align: 'center',
         fontSize: '26px',
@@ -135,20 +136,24 @@ export class MainScene extends Phaser.Scene {
         strokeThickness: 1
       })
     .setOrigin(0.5)
-    .setScale(+this.game.config.width / 515)
+    .setScale(this.game.scale.gameSize.width / 515)
     .setDepth(2);
 
-
-    this.add.image(0, this.yOffset - this.tileHeight / 2, 'back-fence').setOrigin(0).setScale(+this.game.config.width / 1021);
+    this.add.image(0, this.yOffset - this.tileHeight / 2, 'back-fence').setOrigin(0).setScale(this.game.scale.gameSize.width / 1021);
     this.add.image(0, this.yOffset + this.tileHeight * 6, 'front-fence')
-    .setOrigin(0).setScale(+this.game.config.width / 1021);
+    .setOrigin(0).setScale(this.game.scale.gameSize.width / 1021);
+    
+    this.feedbox = this.add.image(0, this.game.scale.gameSize.height - 5, 'feedbox')
+    .setOrigin(0, 1).setScale((this.game.scale.gameSize.width / 6) / 199 * 1.7);
 
-    this.feedbox = this.add.image(0, +this.game.config.height - 5, 'feedbox')
-    .setOrigin(0, 1).setScale((+this.game.config.width / 6) / 199 * 1.7);
-
-    const restartSign = this.add.image(+this.game.config.width - 5, +this.game.config.height, 'refresh-sign')
-    .setOrigin(1).setScale((+this.game.config.width / 6) / 224 * 2).setInteractive();
-    restartSign.on('pointerdown', () => restartGame());
+    const restartSign = this.add.image(this.game.scale.gameSize.width - 5, this.game.scale.gameSize.height, 'refresh-sign')
+    .setOrigin(1).setScale((this.game.scale.gameSize.width / 6) / 224 * 2).setInteractive();
+    restartSign.on('pointerdown', () => 
+        {
+            restartStats();
+            this.scene.restart();
+        }
+    );
 
     this.getPowerups();
 
@@ -159,10 +164,17 @@ export class MainScene extends Phaser.Scene {
     this.shuffleTileTypes();
     this.initTiles();
 
-    // const powerUpEmitter$ = (this.gameInstanceService as any).powerUpEmitter$ as Observable<void>;
-    /*powerUpEmitter$.pipe(skip(1), debounceTime(500)).subscribe(() => {
-      this.triggerBomb();
-    });*/
+    // Motion.removeAllListeners();
+
+    Motion.addListener('accel', ({ acceleration: { x, y, z } }) => {
+        const threshhold = 20;
+        const absX = Math.abs(x);
+        const absY = Math.abs(y);
+        const absZ = Math.abs(z);
+        if ((bombPowerUps > 0) && (absX > threshhold || absY > threshhold || absZ > threshhold)) {
+            this.triggerBomb();
+        }
+    });
   }
 
   update() {
@@ -210,7 +222,7 @@ export class MainScene extends Phaser.Scene {
     const bombs = bombPowerUps;
     for (let i = 0; i < bombs; i++) {
       const bomb = this.add.image(i * this.tileWidth * 1.5 / 2 + this.tileWidth * 1.5 / 3,
-        +this.game.config.height - 5 - this.feedbox.height * this.feedbox.scale / 2, 'feed')
+        this.game.scale.gameSize.height - 5 - this.feedbox.height * this.feedbox.scale / 2, 'feed')
         .setScale(this.assetScale * 1.5).setOrigin(0.5).setInteractive();
       (bomb as Phaser.GameObjects.Sprite).on('pointerdown', () => this.triggerBomb());
       this.bombs.push(bomb);
@@ -273,10 +285,9 @@ export class MainScene extends Phaser.Scene {
   }
 
   private tileDown(tile: Phaser.GameObjects.Sprite) {
-    /*const vibrationSvc = (this.gameInstanceService as any).vibrationSvc as VibrationService;
     if (Capacitor.platform !== 'web') {
-      vibrationSvc.giveHapticFeedback();
-    }*/
+      giveHapticFeedback();
+    }
     if (this.canMove) {
       this.activeTile1 = tile;
       this.startPosX = (tile.x - this.tileWidth / 2) / this.tileWidth;
@@ -330,12 +341,11 @@ export class MainScene extends Phaser.Scene {
   }
 
   private checkMatch() {
-    // const vibrationSvc = (this.gameInstanceService as any).vibrationSvc as VibrationService;
     const matches = this.getMatches(this.tileGrid);
     if (matches.length > 0) {
-      /* if (Capacitor.platform !== 'web') {
-        vibrationSvc.vibrate();
-      }*/
+      if (Capacitor.platform !== 'web') {
+        vibrate();
+      }
       this.removeTileGroup(matches);
       this.resetTile();
       this.fillTile();
@@ -361,7 +371,7 @@ export class MainScene extends Phaser.Scene {
       // this.gameInstanceService.submitScore();
 
       const levelText = this.add
-        .text(+this.game.config.width / 2, +this.game.config.height / 2, 'Game Over \nNo more moves',
+        .text(this.game.scale.gameSize.width / 2, this.game.scale.gameSize.height / 2, 'Game Over \nNo more moves',
           {
             align: 'center',
             fontSize: '32px',
@@ -387,10 +397,9 @@ export class MainScene extends Phaser.Scene {
   }
 
   private clearTiles() {
-    /* const vibrationSvc = (this.gameInstanceService as any).vibrationSvc as VibrationService;
     if (Capacitor.platform !== 'web') {
-      vibrationSvc.vibrate();
-    }*/
+        vibrate();
+    }
     this.removeTileGroup(this.tileGrid);
     this.fillTile();
   }
@@ -584,7 +593,7 @@ export class MainScene extends Phaser.Scene {
         incrementCurrenActiveTileTypes()
       }
 
-      const levelText = this.add.text(+this.game.config.width / 2, +this.game.config.height / 2, `Level ${level}`,
+      const levelText = this.add.text(this.game.scale.gameSize.width / 2, this.game.scale.gameSize.height / 2, `Level ${level}`,
         {
           fontSize: '32px',
           stroke: '#000000',

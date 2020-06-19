@@ -9,10 +9,11 @@ const Home: React.FC = () => {
   let [gameInstance, setGameInstace] = useState(null);
 
   useIonViewDidEnter(() => {
-    setGameInstace(gameInstanceInit());
-  });
+    //console.log(document.getElementById('game-main').getBoundingClientRect());
+    //setGameInstace(gameInstanceInit());
 
-  // useEffect(()=>setGameInstace(gameInstanceInit()), [])
+    window.addEventListener('load', () => gameInstanceInit());
+  });
 
   return (
     <IonPage>

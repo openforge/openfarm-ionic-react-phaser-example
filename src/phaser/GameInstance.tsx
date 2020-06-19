@@ -10,15 +10,14 @@ export let currentActiveTileTypes = 4;
 export let bombPowerUps = 3;
 
 export function gameInstanceInit() {
-    console.log(window.innerHeight);
     return new Phaser.Game({
     plugins: {
         global: [
         // AchievementsGlobalPlugin,
         ]
     },
-    width: window.screen.availWidth,
-    height: window.screen.availHeight,
+    width: window.innerWidth,
+    height: window.innerHeight,
     type: Phaser.AUTO,
     scale: {
         mode: Phaser.Scale.RESIZE,
@@ -32,8 +31,12 @@ export function gameInstanceInit() {
     });
 }
 
-export function restartGame() {
-
+export function restartStats() {
+    // this.submitScore();
+    score = 0;
+    level = 1;
+    currentActiveTileTypes = 4;
+    bombPowerUps = 3;
 }
 
 export function decreasePowerup() {
