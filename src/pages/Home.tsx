@@ -10,12 +10,16 @@ const GameServices = Plugins.GameServices as GameServicesPlugin;
 
 const Home: React.FC = () => {
 
+  let gameInstance: Phaser.Game | null = null;
+
   useEffect(() => {
     window.addEventListener('load', () => {
-      gameInstanceInit();
-      GameServices.signIn();
+      if(window.innerWidth > 0 && !gameInstance) {
+        gameInstance = gameInstanceInit();
+        GameServices.signIn();
+      }
     });
-  }, []);
+  });
 
   return (
     <IonPage>
