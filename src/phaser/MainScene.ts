@@ -9,7 +9,7 @@ export class MainScene extends Phaser.Scene {
   static KEY = 'main-scene';
   // private achievements: AchievementsPlugin;
 
-  tileGrid = [
+  tileGrid:Phaser.GameObjects.Sprite[][] | null[][]  = [
     [null, null, null, null, null, null],
     [null, null, null, null, null, null],
     [null, null, null, null, null, null],
@@ -51,29 +51,29 @@ export class MainScene extends Phaser.Scene {
     'zebra'
   ];
 
-  activeTile1: Phaser.GameObjects.Sprite;
-  activeTile2: Phaser.GameObjects.Sprite;
+  activeTile1: Phaser.GameObjects.Sprite | null = null;
+  activeTile2: Phaser.GameObjects.Sprite | null = null;
 
-  startPosX: number;
-  startPosY: number;
+  startPosX: number = -1;
+  startPosY: number = -1;
 
   canMove = false;
 
   bombs: Phaser.GameObjects.Image[] = [];
 
   assetTileSize = 136;
-  tileWidth: number;
-  tileHeight: number;
-  yOffset: number;
-  assetScale: number;
+  tileWidth: number = 0;
+  tileHeight: number = 0;
+  yOffset: number = 0;
+  assetScale: number = 0;
 
-  tiles: Phaser.GameObjects.Group;
-  random: Phaser.Math.RandomDataGenerator;
+  tiles: Phaser.GameObjects.Group | null = null;
+  random: Phaser.Math.RandomDataGenerator | null = null;
 
-  matchParticles: Phaser.GameObjects.Particles.ParticleEmitterManager;
-  feedbox: Phaser.GameObjects.Image;
-  scoreText: Phaser.GameObjects.Text;
-  levelText: Phaser.GameObjects.Text;
+  matchParticles: Phaser.GameObjects.Particles.ParticleEmitterManager | null = null;
+  feedbox: Phaser.GameObjects.Image | null = null;
+  scoreText: Phaser.GameObjects.Text | null = null;
+  levelText: Phaser.GameObjects.Text | null = null;
 
   constructor() {
     super({ key: MainScene.KEY });
@@ -164,8 +164,6 @@ export class MainScene extends Phaser.Scene {
     this.shuffleTileTypes();
     this.initTiles();
 
-    // Motion.removeAllListeners();
-
     Motion.addListener('accel', ({ acceleration: { x, y, z } }) => {
         const threshhold = 20;
         const absX = Math.abs(x);
@@ -222,7 +220,7 @@ export class MainScene extends Phaser.Scene {
     const bombs = bombPowerUps;
     for (let i = 0; i < bombs; i++) {
       const bomb = this.add.image(i * this.tileWidth * 1.5 / 2 + this.tileWidth * 1.5 / 3,
-        this.game.scale.gameSize.height - 5 - this.feedbox.height * this.feedbox.scale / 2, 'feed')
+        this.game.scale.gameSize.height - 5 - this.feedbox!.height * this.feedbox!.scale / 2, 'feed')
         .setScale(this.assetScale * 1.5).setOrigin(0.5).setInteractive();
       (bomb as Phaser.GameObjects.Sprite).on('pointerdown', () => this.triggerBomb());
       this.bombs.push(bomb);
@@ -262,8 +260,8 @@ export class MainScene extends Phaser.Scene {
 
   private addTile(x: number, y: number) {
 
-    const tileToAdd = this.tileTypes[this.random.integerInRange(0, currentActiveTileTypes - 1)];
-    const tile = this.tiles.create((x * this.tileWidth) + this.tileWidth / 2, 0, 'animals', tileToAdd);
+    const tileToAdd = this.tileTypes[this.random!.integerInRange(0, currentActiveTileTypes - 1)];
+    const tile = this.tiles!.create((x * this.tileWidth) + this.tileWidth / 2, 0, 'animals', tileToAdd);
     tile.scale = this.assetScale;
 
     this.add.tween({
@@ -493,7 +491,7 @@ export class MainScene extends Phaser.Scene {
     for (const tempArr of this.tileGrid) {
       const testArr = [];
       for (const tempTile of tempArr) {
-        testArr.push({ tileType: tempTile.tileType });
+        testArr.push({ tileType: (tempTile as any).tileType });
       }
       testGrid.push(testArr);
     }
@@ -569,8 +567,8 @@ export class MainScene extends Phaser.Scene {
     for (const tempArr of matches) {
       for (const tile of tempArr) {
         const tilePos = this.getTilePos(this.tileGrid, tile);
-        this.matchParticles.emitParticleAt(tile.x, tile.y);
-        this.tiles.remove(tile, true);
+        this.matchParticles!.emitParticleAt(tile.x, tile.y);
+        this.tiles!.remove(tile, true);
         this.incrementScore();
         if (tilePos.x !== -1 && tilePos.y !== -1) {
           this.tileGrid[tilePos.x][tilePos.y] = null;
@@ -581,7 +579,7 @@ export class MainScene extends Phaser.Scene {
 
   private incrementScore() {
     incrementScore(10);
-    this.scoreText.setText(`Score: ${score}`);
+    this.scoreText!.setText(`Score: ${score}`);
     //this.achievements.checkScoreAchievementsState(score);
     this.checkLevelChange();
   }
@@ -617,7 +615,7 @@ export class MainScene extends Phaser.Scene {
         }
       });
 
-      this.levelText.setText(`Level ${level}`);
+      this.levelText!.setText(`Level ${level}`);
     }
   }
 
@@ -650,7 +648,7 @@ export class MainScene extends Phaser.Scene {
             targets: tempTile,
             duration: 200,
             y: {
-              from: tempTile.y,
+              from: tempTile!.y,
               to: (this.tileHeight * j) + (this.tileHeight / 2) + (this.yOffset),
             }
           });

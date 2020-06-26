@@ -4,4 +4,5 @@
     <string name="title_activity_main">openfarm-react</string>
     <string name="package_name">io.openforge.openfarmreact</string>
     <string name="custom_url_scheme">io.openforge.openfarmreact</string>
+    <string name="app_id">635780423057</string>
 </resources>
